@@ -202,6 +202,7 @@ class FullJoinQuery extends Query {
       q.add("facet.field", fromField);
       q.add("facet.mincount", "1");
       q.add("facet.sort", "index");
+      q.add("facet.limit", "-1");
       q.add("rows", "0");
 
       if (searcher.getCore().getCoreDescriptor().getCloudDescriptor() == null) {
