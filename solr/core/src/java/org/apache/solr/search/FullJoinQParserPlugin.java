@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -134,7 +133,7 @@ class FullJoinQuery extends Query {
             boolean warming = req.getParams().getBool("warming", false);
             if (warming) {
               // Do not try to process warming queries at all, you can't get the right facet results.
-              throw new ExitableDirectoryReader.ExitingReaderException("Refusing to autowarm fulljoin");
+              return null;
             }
           }
         }
