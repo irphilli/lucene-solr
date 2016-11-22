@@ -40,10 +40,10 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
    * Exception that is thrown to prematurely terminate a term enumeration.
    */
   @SuppressWarnings("serial")
-  static class ExitingReaderException extends RuntimeException {
+  public static class ExitingReaderException extends RuntimeException {
 
     /** Constructor **/
-    public ExitingReaderException(String msg) {
+    ExitingReaderException(String msg) {
       super(msg);
     }
   }

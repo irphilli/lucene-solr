@@ -61,6 +61,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.RTimer;
+import org.apache.solr.util.RefCounted;
 
 public class FullJoinQParserPlugin extends QParserPlugin {
   public static final String NAME = "fulljoin";
@@ -75,8 +76,16 @@ public class FullJoinQParserPlugin extends QParserPlugin {
         String v = localParams.get("v");
         QParser fromQueryParser = subQuery(v, null);
         Query fromQuery = fromQueryParser.getQuery();
+        long fromCoreOpenTime = 0;
 
-        return new FullJoinQuery(fromField, toField, fromQuery, v);
+        RefCounted<SolrIndexSearcher> fromHolder = req.getCore().getRegisteredSearcher();
+        if (fromHolder != null)
+        {
+           fromCoreOpenTime = fromHolder.get().getOpenNanoTime();
+           fromHolder.decref();
+        }
+
+        return new FullJoinQuery(fromField, toField, fromQuery, v, fromCoreOpenTime);
       }
     };
   }
@@ -88,12 +97,14 @@ class FullJoinQuery extends Query {
   String toField;
   Query q;
   String v;
+  long fromCoreOpenTime;
 
-  public FullJoinQuery(String fromField, String toField, Query subQuery, String v) {
+  public FullJoinQuery(String fromField, String toField, Query subQuery, String v, long fromCoreOpenTime) {
     this.fromField = fromField;
     this.toField = toField;
     this.q = subQuery;
     this.v = v;
+    this.fromCoreOpenTime = fromCoreOpenTime;
   }
 
   public Query getQuery() { return q; }
@@ -151,7 +162,6 @@ class FullJoinQuery extends Query {
 
           dbg.add("fromTermCount", fromTermCount);
           dbg.add("fromTermTotalDf", fromTermTotalDf);
-          dbg.add("fromTermDirectCount", fromTermDirectCount);
           dbg.add("fromTermHits", fromTermHits);
           dbg.add("fromTermHitsTotalDf", fromTermHitsTotalDf);
           dbg.add("toTermHits", toTermHits);
@@ -184,7 +194,6 @@ class FullJoinQuery extends Query {
     long resultListDocs;      // total number of docs collected
     int fromTermCount;
     long fromTermTotalDf;
-    int fromTermDirectCount;  // number of fromTerms that were too small to use the filter cache
     int fromTermHits;         // number of fromTerms that intersected the from query
     long fromTermHitsTotalDf; // sum of the df of the matching terms
     int toTermHits;           // num if intersecting from terms that match a term in the to field
@@ -410,7 +419,8 @@ class FullJoinQuery extends Query {
   private boolean equalsTo(FullJoinQuery other) {
     return this.fromField.equals(other.fromField)
         && this.toField.equals(other.toField)
-        && this.q.equals(other.q);
+        && this.q.equals(other.q)
+        && this.fromCoreOpenTime == other.fromCoreOpenTime;
   }
 
   @Override
@@ -419,6 +429,7 @@ class FullJoinQuery extends Query {
     h = h * 31 + q.hashCode();
     h = h * 31 + fromField.hashCode();
     h = h * 31 + toField.hashCode();
+    h = h * 31 + (int) fromCoreOpenTime;
     return h;
   }
 
