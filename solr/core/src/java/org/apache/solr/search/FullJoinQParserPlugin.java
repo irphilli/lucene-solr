@@ -237,8 +237,8 @@ class FullJoinQuery extends Query {
       } else {
         // Just use the original query.
         q.add("fq", FullJoinQuery.this.v);
-        String collectionName = searcher.getCore().getCoreDescriptor().getCollectionName();
-        ZkController zkController = searcher.getCore().getCoreDescriptor().getCoreContainer().getZkController();
+        String collectionName = searcher.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName();
+        ZkController zkController = searcher.getCore().getCoreContainer().getZkController();
         String fromCollectionUrl = zkController.getBaseUrl() + "/" + collectionName;
         try (HttpSolrClient client = new HttpSolrClient(fromCollectionUrl)) {
           QueryResponse rsp = client.query(q);
